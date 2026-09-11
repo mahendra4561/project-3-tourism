@@ -7,19 +7,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics.pairwise import cosine_similarity
 from data_preparation import prepare_dataset
 
-# -------------------------------
-# 📥 Load dataset
-# -------------------------------
 final_dataset, encoders, scaler = prepare_dataset()
 
-# -------------------------------
-# 🌈 Page Config
-# -------------------------------
 st.set_page_config(page_title="Tourism Experience Analytics", layout="wide")
 
-# -------------------------------
-# 🌅 Curated Backgrounds
-# -------------------------------
 page_backgrounds = {
     "Overview": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
     "Predictions": "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d",
@@ -32,9 +23,6 @@ page_backgrounds = {
     "Settings": "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
 }
 
-# -------------------------------
-# 🎨 Global Styling + Background
-# -------------------------------
 def set_background(page):
     page_bg_img = f"""
     <style>
@@ -46,44 +34,6 @@ def set_background(page):
     }}
     [data-testid="stHeader"] {{background: rgba(0,0,0,0);}}
     [data-testid="stSidebar"] {{background: rgba(255,255,255,0.85);}}
-
-    [data-testid="stRadio"] {{
-        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-        padding: 12px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        margin-bottom: 20px;
-        transition: all 0.3s ease;
-    }}
-    [data-testid="stRadio"]:hover {{
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-    }}
-    [data-testid="stRadio"] > div {{
-        justify-content: center;
-    }}
-    [data-testid="stRadio"] label {{
-        background: linear-gradient(135deg, #ffffff 0%, #f3f3f3 100%);
-        padding: 8px 16px;
-        margin: 4px;
-        border-radius: 20px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }}
-    [data-testid="stRadio"] label:hover {{
-        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-        transform: translateY(-2px);
-    }}
-    [data-testid="stRadio"] label div {{
-        color: #333;
-        font-weight: 600;
-    }}
-    [data-testid="stRadio"] input:checked + div {{
-        color: #111;
-    }}
     .kpi-card {{
         background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);
         padding: 20px; border-radius: 12px; text-align: center;
@@ -101,9 +51,6 @@ def set_background(page):
     """
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# -------------------------------
-# 🌍 Navigation Bar
-# -------------------------------
 nav_options = {
     "🏠 Overview": "Overview",
     "🔮 Predictions": "Predictions",
@@ -120,9 +67,6 @@ page = nav_options[selected_page]
 
 set_background(page)
 
-# -------------------------------
-# 🏠 Overview
-# -------------------------------
 if page == "Overview":
     st.header("📊 Preview of Clean Dataset")
     st.dataframe(final_dataset.head())
@@ -147,9 +91,6 @@ if page == "Overview":
     avg_rating_continent = final_dataset.groupby("Continent")["Rating"].mean()
     st.bar_chart(avg_rating_continent)
 
-# -------------------------------
-# 🔮 Predictions
-# -------------------------------
 elif page == "Predictions":
     st.header("🔮 Predictions")
     user_id = st.selectbox("Select UserId", final_dataset["UserId"].unique())
@@ -170,9 +111,6 @@ elif page == "Predictions":
     with col2:
         st.markdown(f"<div class='kpi-card'><div class='kpi-title'>👥 Predicted Visit Mode</div><div class='kpi-value'>{predicted_mode}</div></div>", unsafe_allow_html=True)
 
-# -------------------------------
-# 🎁 Recommendations
-# -------------------------------
 elif page == "Recommendations":
     st.header("🎁 Recommended Attractions")
     user_id = st.selectbox("Select UserId for Recommendations", sorted(final_dataset["UserId"].unique()))
@@ -207,7 +145,6 @@ elif page == "Recommendations":
             for attraction_id, r in rated.items():
                 scores = scores.add(item_sim_df[attraction_id] * r, fill_value=0)
         else:
-            # Cold start (no ratings on record): fall back to overall top-rated attractions
             scores = data.groupby("AttractionId")["Rating"].mean()
 
         scores = scores.drop(index=[a for a in seen if a in scores.index], errors="ignore")
@@ -223,24 +160,4 @@ elif page == "Recommendations":
 
         cols = st.columns(len(top_recs))
         for col, (attraction_id, _) in zip(cols, top_recs.items()):
-            info = attraction_info.loc[attraction_id]
-            icon = TYPE_ICONS.get(info["AttractionType"], "📍")
-            with col:
-                st.markdown(f"""
-                <div class='card'>
-                    <div style='font-size:2rem;'>{icon}</div>
-                    <div style='font-weight:600; margin:8px 0;'>{info['Attraction']}</div>
-                    <div>⭐ {avg_ratings.loc[attraction_id]:.2f}</div>
-                    <div style='font-size:0.85rem; color:#333;'>{info['AttractionType']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-# -------------------------------
-# 📊 / 📈 / 📂 / 🗺️ / 📑 / ⚙️ — not yet wired up
-# -------------------------------
-# I was only given the code for Overview, Predictions and Recommendations.
-# These placeholders just keep navigation from looking broken until the
-# real content for these pages is added.
-else:
-    st.header(f"{selected_page}")
-    st.info("This page hasn't been built yet — send over the code or tell me what it should show.")
+            info = attraction
