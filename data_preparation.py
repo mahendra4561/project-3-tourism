@@ -1,11 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-
 def prepare_dataset():
-    # -------------------------------
-    # 📥 Load all tables (files in project root)
-    # -------------------------------
     city = pd.read_excel("City.xlsx")
     country = pd.read_excel("Country.xlsx")
     region = pd.read_excel("Region.xlsx")
@@ -16,50 +12,21 @@ def prepare_dataset():
     transaction = pd.read_excel("Transaction.xlsx")
     user = pd.read_excel("User.xlsx")
 
-    # -------------------------------
-    # 🔗 Merge attraction hierarchy (attraction's own location)
-    # -------------------------------
     items_full = item.merge(type_df, on="AttractionTypeId", how="left")
     items_full = items_full.merge(city, left_on="AttractionCityId", right_on="CityId", how="left")
     items_full = items_full.merge(country, on="CountryId", how="left")
     items_full = items_full.merge(region, on="RegionId", how="left")
     items_full = items_full.merge(continent, on="ContinentId", how="left")
 
-    # -------------------------------
-    # 🔗 Merge transactions with users, then with attraction info
-    # -------------------------------
-    # NOTE: `user` also carries a home ContinentId/RegionId/CountryId/CityId, which
-    # collides with the attraction's own location IDs from items_full. Pandas
-    # resolves this by suffixing the ID columns _x (user's home) / _y (attraction's
-    # location) — the readable name columns (CityName/Country/Region/Continent)
-    # don't collide and pass through untouched.
     trans_full = transaction.merge(user, on="UserId", how="left")
     trans_full = trans_full.merge(items_full, on="AttractionId", how="left")
-
-    # ✅ Merge VisitMode (numeric) with Mode table to get the text label.
-    # This produces VisitMode_x (original numeric code) and VisitMode_y (text
-    # label from Mode.xlsx), since both frames have a "VisitMode" column.
     trans_full = trans_full.merge(mode, left_on="VisitMode", right_on="VisitModeId", how="left")
 
-    # -------------------------------
-    # 🧹 Handle Missing Values
-    # -------------------------------
     trans_full = trans_full.dropna(subset=["UserId", "AttractionId", "Rating"])
     for col in ["CityName", "Country", "Region", "Continent", "AttractionType", "VisitMode_y"]:
         if col in trans_full.columns:
             trans_full[col] = trans_full[col].fillna("Unknown")
 
-    # -------------------------------
-    # 🔢 Encode categorical features (kept SEPARATE from the display columns)
-    # -------------------------------
-    # Previously this loop label-encoded VisitMode_y/CityName/Country/Region/
-    # Continent/AttractionType IN PLACE, which overwrote the human-readable
-    # text with integers right before they were used for display and for the
-    # classifier's target column. None of the current app logic actually needs
-    # numeric versions of these (the ML features are just UserId/AttractionId,
-    # and sklearn's classifier can take string class labels directly), so we
-    # keep the encoders available for optional future use without destroying
-    # the readable columns.
     label_encoders = {}
     for col in ["VisitMode_y", "CityName", "Country", "Region", "Continent", "AttractionType"]:
         if col in trans_full.columns:
@@ -67,16 +34,9 @@ def prepare_dataset():
             le.fit(trans_full[col].astype(str))
             label_encoders[col] = le
 
-    # -------------------------------
-    # 📊 Normalize Ratings
-    # -------------------------------
     scaler = StandardScaler()
     trans_full["Rating_scaled"] = scaler.fit_transform(trans_full[["Rating"]])
 
-    # -------------------------------
-    # ✅ Final Clean Dataset
-    # -------------------------------
-    # Use the text label from Mode.xlsx (`VisitMode_y`) instead of the numeric ID
     final_dataset = trans_full[[
         "UserId", "AttractionId", "Attraction", "Rating", "Rating_scaled",
         "VisitMode_y", "CityName", "Country", "Region", "Continent", "AttractionType"
@@ -84,8 +44,6 @@ def prepare_dataset():
 
     return final_dataset, label_encoders, scaler
 
-
-# Example usage
 if __name__ == "__main__":
     dataset, encoders, scaler = prepare_dataset()
     print(dataset.head())
